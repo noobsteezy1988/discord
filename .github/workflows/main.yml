@@ -1,0 +1,82 @@
+name: Run OwO Farm Bot
+
+on: [workflow_dispatch]
+
+jobs:
+  run-owo-farm-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Check Node.js version
+        run: node -v
+
+      - name: Install Git
+        run: sudo apt-get install git -y
+
+      - name: Create bot directory
+        run: mkdir owofarmbot
+
+      - name: Clone repository
+        working-directory: owofarmbot
+        run: git clone https://github.com/Mid0aria/owofarmbot_stable .
+
+      - name: Configure bot
+        working-directory: owofarmbot
+        run: |
+          echo '{
+            "token": "${{ secrets.BOT_TOKEN }}",
+            "prefix": "e!",
+            "channelid": "${{ secrets.CHANNEL_ID }}"
+          }' > config.json
+
+      - name: Install dependencies
+        working-directory: owofarmbot
+        run: npm install
+
+      - name: Start OwO Farm Bot
+        working-directory: owofarmbot
+        run: node bot.js > bot_output.log 2>&1 &
+
+      - name: Wait for bot to start
+        run: sleep 30
+
+      - name: Operate bot
+        working-directory: owofarmbot
+        run: |
+          echo "e!start" >> bot_input.txt
+          sleep 300
+          echo "e!stop" >> bot_input.txt
+          echo "e!resume" >> bot_input.txt
+          sleep 60
+          echo "e!stop" >> bot_input.txt
+
+      - name: Generate report
+        working-directory: owofarmbot
+        run: |
+          echo "Bot Run Report" > report.txt
+          echo "----------------" >> report.txt
+          echo "Date: $(date)" >> report.txt
+          echo "Node version: $(node -v)" >> report.txt
+          echo "Bot output:" >> report.txt
+          cat bot_output.log >> report.txt
+          echo "Bot input:" >> report.txt
+          cat bot_input.txt >> report.txt
+
+      - name: Display bot info
+        run: |
+          echo "OwO Farm Bot is running. Details:"
+          echo "Bot prefix: e!"
+          echo "Commands used: start, stop, resume"
+
+      - name: Keep alive
+        run: |
+          while true; do
+            echo "OwO Farm Bot is running. Details:"
+            echo "Bot prefix: e!"
+            echo "Commands used: start, stop, resume"
+            sleep 300
+          done
