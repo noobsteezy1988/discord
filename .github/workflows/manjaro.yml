@@ -21,7 +21,7 @@ jobs:
 
     - name: Download Manjaro XFCE ISO
       run: |
-        wget https://download.manjaro.org/xfce/21.2.6/manjaro-xfce-21.2.6-220314-linux515.iso
+        wget https://download.manjaro.org/xfce/24.0.7/manjaro-xfce-24.0.7-240821-linux69.iso
         
     - name: Create virtual disk
       run: qemu-img create -f qcow2 manjaro.qcow2 20G
@@ -32,7 +32,7 @@ jobs:
           -m 2048 \
           -smp 2 \
           -boot d \
-          -cdrom manjaro-xfce-21.2.6-220314-linux515.iso \
+          -cdrom manjaro-xfce-24.0.7-240821-linux69.iso \
           -drive file=manjaro.qcow2,format=qcow2 \
           -display none \
           -nographic \
