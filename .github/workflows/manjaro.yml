@@ -36,7 +36,7 @@ jobs:
           -drive file=manjaro.qcow2,format=qcow2 \
           -display none \
           -nographic \
-          -enable-kvm \
           -device virtio-net-pci,netdev=net0 \
           -netdev user,id=net0 \
           -bios /usr/share/OVMF/OVMF_CODE.fd
+      shell: /usr/bin/bash -e {0}
