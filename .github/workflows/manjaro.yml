@@ -1,0 +1,42 @@
+name: Run Manjaro XFCE
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  setup-and-run:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y qemu-system-x86 ovmf
+
+    - name: Download Manjaro XFCE ISO
+      run: |
+        wget https://download.manjaro.org/xfce/21.2.6/manjaro-xfce-21.2.6-220314-linux515.iso
+        
+    - name: Create virtual disk
+      run: qemu-img create -f qcow2 manjaro.qcow2 20G
+      
+    - name: Run Manjaro XFCE in QEMU
+      run: |
+        qemu-system-x86_64 \
+          -m 2048 \
+          -smp 2 \
+          -boot d \
+          -cdrom manjaro-xfce-21.2.6-220314-linux515.iso \
+          -drive file=manjaro.qcow2,format=qcow2 \
+          -display none \
+          -nographic \
+          -enable-kvm \
+          -device virtio-net-pci,netdev=net0 \
+          -netdev user,id=net0 \
+          -bios /usr/share/OVMF/OVMF_CODE.fd
