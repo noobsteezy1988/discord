@@ -27,6 +27,21 @@ jobs:
           sudo usermod -aG sudo runner
           echo "runner ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
 
+      - name: Install and setup Playit
+        run: |
+          curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
+          echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
+          sudo apt update
+          sudo apt install -y playit
+          
+          # Start Playit with TCP tunnel on port 5901
+          nohup playit tcp 5901 > playit.log 2>&1 &
+          sleep 10  # Give Playit some time to start and generate the URL
+          
+          # Extract the Playit URL
+          PLAYIT_URL=$(grep -o 'https://[^ ]*' playit.log | head -1)
+          echo "PLAYIT_URL=$PLAYIT_URL" >> $GITHUB_OUTPUT
+
       - name: Get system information
         id: sysinfo
         run: |
@@ -37,25 +52,7 @@ jobs:
           echo "DISK_TOTAL=$(df -h / | awk 'NR==2 {print $2}')" >> $GITHUB_OUTPUT
           echo "DISK_AVAIL=$(df -h / | awk 'NR==2 {print $4}')" >> $GITHUB_OUTPUT
 
-      - name: Start ngrok
-        id: ngrok
-        env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-        run: |
-          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list && sudo apt update && sudo apt install -y ngrok
-          
-          # Create ngrok config file with version 2 format
-          mkdir -p /home/runner/.config/ngrok
-          cat << EOF > /home/runner/.config/ngrok/ngrok.yml
-          version: "2"
-          authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
-          EOF
-          
-          # Start ngrok
-          ngrok tcp 22 --log=stdout > ngrok.log &
-          sleep 10
-          NGROK_URL=$(grep -o 'tcp://.*' ngrok.log | sed 's/tcp:\/\///')
-          echo "NGROK_URL=$NGROK_URL" >> $GITHUB_OUTPUT
+      # ... (rest of the workflow remains the same)
 
       - name: Display connection info and system specs
         run: |
@@ -63,6 +60,7 @@ jobs:
           echo "Public IP: ${{ steps.sysinfo.outputs.PUBLIC_IP }}"
           echo "SSH command: ssh runner@${{ steps.ngrok.outputs.NGROK_URL }}"
           echo "Password: ${{ secrets.SSH_PASSWORD }}"
+          echo "Playit URL: ${{ steps.playit.outputs.PLAYIT_URL }}"
           echo "CPU: ${{ steps.sysinfo.outputs.CPU_INFO }}"
           echo "CPU Cores: ${{ steps.sysinfo.outputs.CPU_CORES }}"
           echo "Total RAM: ${{ steps.sysinfo.outputs.RAM_TOTAL }}"
@@ -70,12 +68,7 @@ jobs:
           echo "Available Disk: ${{ steps.sysinfo.outputs.DISK_AVAIL }}"
           echo "The user 'runner' has sudo privileges."
 
-      - name: Optimize system
-        run: |
-          sudo apt-get autoremove -y
-          sudo apt-get clean
-          sudo swapoff -a
-          sudo swapon -a
+      # ... (rest of the workflow remains the same)
 
       - name: Keep alive
         run: |
@@ -84,6 +77,7 @@ jobs:
             echo "Public IP: ${{ steps.sysinfo.outputs.PUBLIC_IP }}"
             echo "SSH command: ssh runner@${{ steps.ngrok.outputs.NGROK_URL }}"
             echo "Password: ${{ secrets.SSH_PASSWORD }}"
+            echo "Playit URL: ${{ steps.playit.outputs.PLAYIT_URL }}"
             echo "CPU: ${{ steps.sysinfo.outputs.CPU_INFO }}"
             echo "CPU Cores: ${{ steps.sysinfo.outputs.CPU_CORES }}"
             echo "Total RAM: ${{ steps.sysinfo.outputs.RAM_TOTAL }}"
