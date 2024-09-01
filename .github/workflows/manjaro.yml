@@ -21,13 +21,11 @@ jobs:
           sudo apt-get install -y openssh-server
           sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
           sudo service ssh restart
-          echo "SSH_PASSWORD=${{ secrets.SSH_PASSWORD }}" >> $GITHUB_ENV
-
-      - name: Create user with sudo privileges
-        run: |
-          sudo useradd -m -s /bin/bash github-user
-          echo "github-user:${{ env.SSH_PASSWORD }}" | sudo chpasswd
-          echo "github-user ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
+          
+          # Set the SSH password for the runner user
+          echo "runner:${{ secrets.SSH_PASSWORD }}" | sudo chpasswd
+          sudo usermod -aG sudo runner
+          echo "runner ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
 
       - name: Get system information
         id: sysinfo
@@ -55,14 +53,14 @@ jobs:
         run: |
           echo "Max-Spec VPS is ready. Connection details and specs:"
           echo "Public IP: ${{ steps.sysinfo.outputs.PUBLIC_IP }}"
-          echo "SSH command: ssh github-user@${{ steps.ngrok.outputs.NGROK_URL }}"
-          echo "Password: ${{ env.SSH_PASSWORD }}"
+          echo "SSH command: ssh runner@${{ steps.ngrok.outputs.NGROK_URL }}"
+          echo "Password: ${{ secrets.SSH_PASSWORD }}"
           echo "CPU: ${{ steps.sysinfo.outputs.CPU_INFO }}"
           echo "CPU Cores: ${{ steps.sysinfo.outputs.CPU_CORES }}"
           echo "Total RAM: ${{ steps.sysinfo.outputs.RAM_TOTAL }}"
           echo "Total Disk: ${{ steps.sysinfo.outputs.DISK_TOTAL }}"
           echo "Available Disk: ${{ steps.sysinfo.outputs.DISK_AVAIL }}"
-          echo "The user 'github-user' has sudo privileges."
+          echo "The user 'runner' has sudo privileges."
 
       - name: Optimize system
         run: |
@@ -76,13 +74,13 @@ jobs:
           while true; do
             echo "Max-Spec VPS is running. Connection details:"
             echo "Public IP: ${{ steps.sysinfo.outputs.PUBLIC_IP }}"
-            echo "SSH command: ssh github-user@${{ steps.ngrok.outputs.NGROK_URL }}"
-            echo "Password: ${{ env.SSH_PASSWORD }}"
+            echo "SSH command: ssh runner@${{ steps.ngrok.outputs.NGROK_URL }}"
+            echo "Password: ${{ secrets.SSH_PASSWORD }}"
             echo "CPU: ${{ steps.sysinfo.outputs.CPU_INFO }}"
             echo "CPU Cores: ${{ steps.sysinfo.outputs.CPU_CORES }}"
             echo "Total RAM: ${{ steps.sysinfo.outputs.RAM_TOTAL }}"
             echo "Total Disk: ${{ steps.sysinfo.outputs.DISK_TOTAL }}"
             echo "Available Disk: ${{ steps.sysinfo.outputs.DISK_AVAIL }}"
-            echo "The user 'github-user' has sudo privileges."
+            echo "The user 'runner' has sudo privileges."
             sleep 300
           done
