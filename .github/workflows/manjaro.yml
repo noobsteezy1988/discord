@@ -42,8 +42,16 @@ jobs:
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         run: |
-          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list && sudo apt update && sudo apt install ngrok
-          ngrok config add-authtoken $NGROK_AUTH_TOKEN
+          curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list && sudo apt update && sudo apt install -y ngrok
+          
+          # Create ngrok config file with version 2 format
+          mkdir -p /home/runner/.config/ngrok
+          cat << EOF > /home/runner/.config/ngrok/ngrok.yml
+          version: "2"
+          authtoken: ${{ secrets.NGROK_AUTH_TOKEN }}
+          EOF
+          
+          # Start ngrok
           ngrok tcp 22 --log=stdout > ngrok.log &
           sleep 10
           NGROK_URL=$(grep -o 'tcp://.*' ngrok.log | sed 's/tcp:\/\///')
